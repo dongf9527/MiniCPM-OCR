@@ -14,8 +14,9 @@
 # export HF_ENDPOINT="https://hf-mirror.com"
 
 # ---- llama.cpp 编译(10 号脚本)----
-# 指定 CUDA 架构可加速编译:86(A30/A40/3090) 89(4090) 120(5090);留空=编译全部
+# 指定 CUDA 架构可加速编译:86(A30/A40/3090) 89(4090) 120(RTX 50 系:5080/5090);留空=编译全部
 # export LLAMA_CUDA_ARCH=""
+# 内存 15G 机器若编译被 OOM 杀掉,降低并发重跑: JOBS=8 bash 10_build_llamacpp.sh
 
 # ---- 1.0 解析引擎(20 号脚本)----
 # export OCR_HOST="127.0.0.1"

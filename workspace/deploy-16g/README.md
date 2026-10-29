@@ -58,10 +58,10 @@ cd <仓库根>/workspace/deploy-16g
 cp env.16g.example.sh env.local.sh   # 可选:改 HF_ENDPOINT 等;不建则用内置 16G 默认值
 
 # 1) 体检
-bash 00_check_gpu.sh                 # 预期:汇总行"未过 0 项"
+bash 00_check_gpu.sh                 # 预期:汇总行"未过 0 项";含 GPU/驱动/磁盘/工具链/CUDA(nvcc)/HF 网络连通性
 
-# 2) 编译 llama.cpp(数分钟;4060Ti/4090 可 LLAMA_CUDA_ARCH=89 加速,5090 为 120)
-LLAMA_CUDA_ARCH=89 bash 10_build_llamacpp.sh   # 预期:产出 build/bin/llama-server
+# 2) 编译 llama.cpp(数分钟;4060Ti/4090 可 LLAMA_CUDA_ARCH=89 加速,RTX 5080/5090 为 120,需 nvcc ≥12.8)
+LLAMA_CUDA_ARCH=120 bash 10_build_llamacpp.sh   # 预期:产出 build/bin/llama-server
 #    注:ARCH 须在首次配置前指定;已编译过想换架构:rm -rf ../llama.cpp/build 后重跑
 
 # 3) 下载权重(最小路径跳过 Jev,省 4–5 GB)
@@ -109,7 +109,7 @@ JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 
 | 脚本 | 作用 |
 |---|---|
-| `00_check_gpu.sh` | 环境体检:GPU/显存/驱动/磁盘/工具链 |
+| `00_check_gpu.sh` | 环境体检:GPU/显存/驱动/磁盘/工具链/CUDA 工具链(nvcc,Blackwell 需 ≥12.8)/HF 网络连通性 |
 | `10_build_llamacpp.sh` | 克隆并编译 llama.cpp(GGML_CUDA=ON,产出 llama-server/llama-quantize) |
 | `11_download_weights.sh` | 下载 1.0 GGUF(HF,支持镜像)与 Jev 原始权重 |
 | `12_convert_jev_gguf.sh` | Jev HF→GGUF 转换(architectures 改为分类头,按官方文档流程) |
