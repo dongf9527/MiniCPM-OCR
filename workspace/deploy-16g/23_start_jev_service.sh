@@ -41,4 +41,8 @@ for i in $(seq 1 60); do
 done
 warn "jev-service 未能就绪,日志末尾:"
 tail -20 "$LOG_DIR/jev-service.log" >&2 || true
+if grep -qE 'Name or service not known|could not bind' "$LOG_DIR/jev-service.log" 2>/dev/null; then
+    warn "识别到绑定失败特征:JEV_SERVICE_HOST 需为可直接绑定的地址(默认 127.0.0.1,勿填主机名);"
+    warn "若日志 announce 行是三元组(x86_64-conda-linux-gnu 之类),说明上游 HOST 被 conda 工具链改写——见指南排障表"
+fi
 exit 1
