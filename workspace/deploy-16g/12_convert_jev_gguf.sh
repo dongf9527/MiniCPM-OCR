@@ -6,7 +6,8 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"
 
 [ -d "$LLAMACPP_DIR/.git" ] || die "未找到 llama.cpp 克隆 — 先执行 bash 10_build_llamacpp.sh"
 
-JEV_SRC="$JEV_HF_DIR/MiniCPM-OCR-1.0-Jev"
+JEV_REPO="${JEV_REPO:-openbmb/MiniCPM-OCR-1.0-Jev}"
+JEV_SRC="$JEV_HF_DIR/$JEV_REPO"
 JEV_CONV="$JEV_HF_DIR/MiniCPM-OCR-1.0-Jev-gguf"
 [ -f "$JEV_SRC/config.json" ] || die "未找到 Jev 权重($JEV_SRC)— 先执行 bash 11_download_weights.sh"
 
