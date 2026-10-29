@@ -153,6 +153,7 @@ ls ../run/*.pid 2>/dev/null           # 应看不到 jev-*.pid(90 号已清理)
 - **`21` 号起不来,日志报 `libcudart.so.12`**:CUDA Toolkit 在 conda 环境里而当前 shell 未激活。`conda activate minicpmocr` 后重跑,或 `export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH`。
 - **`23` 号 2 分钟内未就绪**:先看 `tail -50 ../run/logs/jev-service.log`。常见原因是首次启动 Chromium 初始化慢、或渲染依赖安装不完整(重跑 22 号)。
 - **下载/安装阶段卡住**:权重走 `HF_ENDPOINT=https://hf-mirror.com`;渲染环境走 `PIP_INDEX_URL` + `PLAYWRIGHT_DOWNLOAD_HOST`(见第 3 节)。
+- **`12` 号日志出现 `model type 'qwen3_5' ... does not recognize` 与 `Unknown RoPE type: default` 告警**:属预期,不必处理。Transformers(4.57.6)尚未登记 `qwen3_5` 这个 model_type,转换器会自动回退为直接读 `config.json`,张量映射不受影响(混合 SSM/注意力块与 2 分类头均正确导出);判定转换成功看结尾两条 `Model successfully exported` 与产物尺寸(语言模型 ≈3.6 GB + mmproj ≈641 MB),而非这些 WARNING。
 - **`50_smoke_test.sh` 里 Jev 显示 `[–]`**:该项是"可选组件状态",最小路径(`SKIP_JEV=true`)下未启动属预期;启动 Jev 后重跑会变 `[✓]`。
 - **想彻底重置 Jev**:停服务(第 6 节)→ 删 `../gguf/*Jev*` 重转 → 删 `../venv-render` 重装 22 号 → 删 `../jev-hf` 重下(一般不需要走到这一步)。
 
