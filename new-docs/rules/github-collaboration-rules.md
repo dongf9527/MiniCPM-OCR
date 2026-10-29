@@ -135,6 +135,7 @@ rebase 不是默认操作。执行前必须先评估两个替代方案:
 - 2026-10-29 仓库根目录迁移(v1.4):根目录由 `/home/z/my-project/` 迁移至 `/home/z/my-project/MiniCPM-OCR/`,上游源码平铺为仓库根目录,协作文档 `docs/` 更名 `new-docs/` 并入仓库;以单次 rename 提交完成,历史只增不改;
 - 2026-10-29 token 策略确认:当前 token 仅供本协作会话使用、30 天有效(约至 2026-11-28),到期前需签发新 token 并更新 `.git/config` 凭证;
 - 2026-10-29 token 换发(第二次):旧 token 随沙箱重置丢失,换发新 fine-grained token(30 天有效,约至 **2026-11-28**),仍**仅存于沙箱 `.git/config`**(remote URL 内嵌;不入库、不写入任何被跟踪文件)。**沙箱回退/重置后的恢复流程**:① 从用户侧保存处(密码管理器/私密备忘)取回该 token,或请用户重签一个;② 执行 `git remote set-url origin https://<USER>:<TOKEN>@github.com/dongf9527/MiniCPM-OCR.git`;③ `git push` 验证。本仓库所有文档(含本文)均不保存 token 明文,token 的权威备份在用户侧;
+- 2026-10-29 token 换发(第三次,同日晚):沙箱再度重置,凭据再次丢失,用户重签 fine-grained token(30 天有效,约至 **2026-11-28**),按上述恢复流程重挂 remote 并完成推送——**恢复流程首次完整演练走通**(重克隆 → 定位待推提交 → 换发重挂 → 推送验证,全程数分钟);仍仅存 `.git/config`,权威备份在用户侧;
 - **待办**:无(远程闭环与目录体系已就绪;token 到期约 2026-11-28,届时续期即可)。
 
 ---
