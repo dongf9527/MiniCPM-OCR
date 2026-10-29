@@ -2,9 +2,9 @@
 
 | 项目 | 内容 |
 |---|---|
-| 版本 | v1.3 |
+| 版本 | v1.4 |
 | 生效日期 | 2026-10-29 |
-| 仓库根目录 | 沙箱根目录,当前为 `/home/z/my-project/`;以 `git rev-parse --show-toplevel` 实测为准(见规则 2) |
+| 仓库根目录 | `/home/z/my-project/MiniCPM-OCR/`(2026-10-29 迁移;以 `git rev-parse --show-toplevel` 实测为准,见规则 2) |
 | 远程仓库 | `origin` → github.com/dongf9527/MiniCPM-OCR(分支 `main`) |
 | 默认分支 | `main` |
 | 适用范围 | 本仓库全部代码与文档改动,包括 AI 协作会话产生的所有变更 |
@@ -17,9 +17,9 @@
 | # | 规则 | 核心要求 |
 |---|---|---|
 | 1 | 唯一同步方式 | 所有代码/文档改动通过 git commit + git push 推送到 GitHub,不在对话中凭空产生代码 |
-| 2 | 仓库位置 | 严格使用沙箱根目录作为仓库根目录(当前为 `/home/z/my-project/`,以 `git rev-parse --show-toplevel` 实测为准),不在其他目录创建 .git |
+| 2 | 仓库位置 | 仓库根目录为 `/home/z/my-project/MiniCPM-OCR/`(以 `git rev-parse --show-toplevel` 实测为准),不在其他目录创建 .git |
 | 3 | 提交规范 | 小步提交,commit message 使用 conventional commits 风格(如 `feat:`、`fix:`、`docs:`) |
-| 4 | 会话记录 | 分析/评估/测试记录写入 `docs/` 目录,以 Markdown 形式提交推送 |
+| 4 | 会话记录 | 分析/评估/测试记录写入 `new-docs/` 目录,以 Markdown 形式提交推送 |
 | 5 | 禁止 force push | 绝不使用 `git push --force`;同理禁止对已推送 commit 执行 `--amend` 后再推送(等效 force,同样触犯本条);未推送 commit 的 amend 属修正笔误常规手段,不受限 |
 | 6 | Rebase 前置 | rebase 前先评估替代方案(revert/merge),必要时提前告知确认 |
 | 7 | bug 修复不重命名变量 | 修复 bug 时保持原变量名,仅在 refactor 时重命名 |
@@ -41,18 +41,16 @@
 
 ### 规则 2:仓库位置
 
-仓库根目录 = 沙箱根目录。当前沙箱环境中为 `/home/z/my-project/`;**一律以 `git rev-parse --show-toplevel` 的实测结果为准**——若沙箱环境迁移导致挂载路径变化,以实测值为准,并同步更新本文档与 `docs/README.md`。禁止在仓库根目录以外的任何路径执行 `git init`。目录职责如下:
+仓库根目录为 `/home/z/my-project/MiniCPM-OCR/`(沙箱内);**一律以 `git rev-parse --show-toplevel` 的实测结果为准**——若沙箱环境迁移导致挂载路径变化,以实测值为准,并同步更新本文档与 `new-docs/README.md`。禁止在仓库根目录以外的任何路径执行 `git init`。目录职责如下:
 
 | 路径 | 职责 | 是否入库 |
 |---|---|---|
-| `docs/` | 全部文档,按类型分子目录(见规则 4 与 `docs/README.md`) | ✅ 提交推送 |
-| `scripts/` | 可复用的生成脚本、工具脚本 | ✅ 提交推送 |
-| `download/` | 非文档类交付物(数据集、图片等)或用户明确要求放置的文件 | 按需 |
-| `upload/` | 用户上传的素材原件 | 按需 |
-| `skills/` | 环境内置技能,与本仓库无关 | ❌ 已 gitignore,禁止提交 |
-| `MiniCPM-OCR/` | 上游项目源码快照(选项 B:纳入本仓库) | ✅ 提交推送,只读使用 |
+| `new-docs/` | 全部协作文档,按类型分子目录(见规则 4 与 `new-docs/README.md`) | ✅ 提交推送 |
+| `workspace/` | 协作用脚本、生成物、实验产物(首次使用时创建;不与上游 `scripts/` 混用) | ✅ 提交推送 |
+| 上游源码(`sdk/`、`docs/`、`assets/`、`scripts/`、`pyproject.toml` 等) | 上游 MiniCPM-OCR 源码快照,只读使用 | ✅ 随快照更新 |
+| 沙箱外层目录(`/home/z/my-project/` 下的 `skills/`、`upload/`、`download/`、`.env`) | 平台环境目录,位于仓库之外 | ❌ 不入库 |
 
-注意:`MiniCPM-OCR/` 是上游 OpenBMB/MiniCPM-OCR 的**源码快照**(剥离上游 `.git` 后导入),只读使用,不在其中做协作改动;更新方式为整体替换后以 `chore:` 提交,并在 message 中注明新的上游 commit。协作产出(文档、脚本、报告)一律放在仓库根部的 `docs/`、`scripts/`、`download/`。
+注意:仓库根目录下的上游源码是 OpenBMB/MiniCPM-OCR 的**快照**(2026-10-29 以 commit `b33b474` 导入,已剥离上游 `.git`),只读使用、不做协作改动;更新方式为整体替换后以 `chore:` 提交并在 message 中注明新的上游 commit。协作产出(文档、脚本、报告)一律放在 `new-docs/` 与 `workspace/`。
 
 ### 规则 3:提交规范
 
@@ -75,17 +73,17 @@
 
 ### 规则 4:会话记录
 
-分析、评估、测试类记录**必须写入 `docs/` 目录**,以 Markdown 形式提交推送,供后续会话与协作者查阅。`docs/` 按文档类型分子目录:
+分析、评估、测试类记录**必须写入 `new-docs/` 目录**,以 Markdown 形式提交推送,供后续会话与协作者查阅。`new-docs/` 按文档类型分子目录:
 
 | 子目录 | 收录内容 | 命名规范 |
 |---|---|---|
-| `docs/rules/` | 协作规则、决策记录等长期约定性文档 | 主题命名(如本文档) |
-| `docs/evaluation/` | 评估报告、基准横评、能力测试报告等正式分析文档 | 主题命名 |
-| `docs/records/` | 一次性会话记录:分析笔记、测试记录、问题排查 | `YYYY-MM-DD-主题.md` |
+| `new-docs/rules/` | 协作规则、决策记录等长期约定性文档 | 主题命名(如本文档) |
+| `new-docs/evaluation/` | 评估报告、基准横评、能力测试报告等正式分析文档 | 主题命名 |
+| `new-docs/records/` | 一次性会话记录:分析笔记、测试记录、问题排查 | `YYYY-MM-DD-主题.md` |
 
 - 内容要素:背景与目的、关键结论、支撑数据、遗留问题与后续待办;
-- `docs/README.md` 是目录导航与文档索引,**新增文档须同步更新索引**;
-- 与 `download/` 的分工:文档(含报告)一律以 `docs/` 为正本;`download/` 仅存放非文档类交付物或用户明确要求放置的文件;
+- `new-docs/README.md` 是目录导航与文档索引,**新增文档须同步更新索引**;
+- 与交付物的分工:文档(含报告)一律以 `new-docs/` 为正本;非文档类交付物放 `workspace/` 或按用户指示放置;
 - 若 `records/` 内某次记录沉淀为正式结论,升级为 `evaluation/` 或 `rules/` 下的主题文档;
 - **反例**:测试跑完只说"结论是 X",没有落盘——换一个会话就要重测一遍。
 
@@ -134,7 +132,9 @@ rebase 不是默认操作。执行前必须先评估两个替代方案:
 - 2026-10-29 远程闭环:配置 origin 并完成首次 push(`970c5e3...3260382` 共 5 笔提交),token 仅存于本地 `.git/config`;
 - 2026-10-29 文档目录体系:建立 `docs/rules|evaluation|records` 分类结构,评估报告由 `download/` 迁入 `docs/evaluation/`,协作规则迁入 `docs/rules/`,新增 `docs/README.md` 索引;
 - 2026-10-29 仓库根目录约定升级(v1.3):由硬编码绝对路径改为"沙箱根目录 + `git rev-parse --show-toplevel` 实测优先",适配沙箱环境迁移,并补充远程仓库信息;
-- **待办**:首推使用的 GitHub token 建议吊销重发(曾在会话中明文出现),下次推送前更新 `.git/config` 中的凭证。
+- 2026-10-29 仓库根目录迁移(v1.4):根目录由 `/home/z/my-project/` 迁移至 `/home/z/my-project/MiniCPM-OCR/`,上游源码平铺为仓库根目录,协作文档 `docs/` 更名 `new-docs/` 并入仓库;以单次 rename 提交完成,历史只增不改;
+- 2026-10-29 token 策略确认:当前 token 仅供本协作会话使用、30 天有效(约至 2026-11-28),到期前需签发新 token 并更新 `.git/config` 凭证;
+- **待办**:无(远程闭环与目录体系已就绪;token 到期前续期即可)。
 
 ---
 
@@ -151,4 +151,4 @@ rebase 不是默认操作。执行前必须先评估两个替代方案:
 | 撤销已推送提交 | `git revert <sha>` |
 | 复核历史 | `git log --oneline --graph -20` |
 
-> 本文档自身即遵守上述规则:存放于 `docs/rules/`、以 Markdown 形式提交;后续修订一律走新的 `docs:` 提交,不改写历史。
+> 本文档自身即遵守上述规则:存放于 `new-docs/rules/`、以 Markdown 形式提交;后续修订一律走新的 `docs:` 提交,不改写历史。

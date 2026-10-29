@@ -1,4 +1,24 @@
+# 本地环境与密钥(仓库内不应出现;沙箱外层的 .env 防御性排除)
 .env
-MiniCPM-OCR-repo/
-skills/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Node
 node_modules/
+
+# 沙箱环境目录(位于仓库外,防御性排除)
+skills/
+
+# 模型权重不入库(应存放于 HuggingFace/ModelScope)
+*.gguf
+*.safetensors
+
+# 系统杂项
+.DS_Store
