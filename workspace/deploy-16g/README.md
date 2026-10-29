@@ -46,6 +46,24 @@ nvcc --version || {
 export PATH=/usr/local/cuda/bin:$PATH   # 当前会话立即生效
 ```
 
+## 0.5 conda Python 环境(推荐)
+
+base 环境常带最新版 Python(如 3.13),而 Paddle 对 3.13 的轮子支持不全,安装易失败。建议建独立环境并在后续脚本(10/11/12/30 号)执行期间**保持激活**——Python 类脚本用它建 venv,编译用它找 nvcc:
+
+```bash
+conda create -n py312 python=3.12 -y
+conda activate py312
+
+# 仅当 00/01 号提示缺 nvcc 或 CUDA <12.8 时,给本环境装 CUDA Toolkit(RTX 50 系需 ≥12.8):
+conda install -c nvidia cuda-toolkit=12.9 -y   # 建议 12.9+:对宿主 g++ 15 兼容更好
+```
+
+环境级依赖检查(激活后运行):
+
+```bash
+bash 01_check_python_env.sh   # conda env / python 版本 / pip / venv / 当前环境 nvcc / 编译工具
+```
+
 ## 快速开始
 
 两条路线:
@@ -57,8 +75,9 @@ export PATH=/usr/local/cuda/bin:$PATH   # 当前会话立即生效
 cd <仓库根>/workspace/deploy-16g
 cp env.16g.example.sh env.local.sh   # 可选:改 HF_ENDPOINT 等;不建则用内置 16G 默认值
 
-# 1) 体检
+# 1) 体检(系统级 + Python 环境级;conda 环境需先激活)
 bash 00_check_gpu.sh                 # 预期:汇总行"未过 0 项";含 GPU/驱动/磁盘/工具链/CUDA(nvcc)/HF 网络连通性
+bash 01_check_python_env.sh          # 预期:"未过 0 项";conda env/python(推荐 3.12)/pip/venv/当前环境 nvcc
 
 # 2) 编译 llama.cpp(数分钟;4060Ti/4090 可 LLAMA_CUDA_ARCH=89 加速,RTX 5080/5090 为 120,需 nvcc ≥12.8)
 LLAMA_CUDA_ARCH=120 bash 10_build_llamacpp.sh   # 预期:产出 build/bin/llama-server
@@ -110,6 +129,7 @@ JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 | 脚本 | 作用 |
 |---|---|
 | `00_check_gpu.sh` | 环境体检:GPU/显存/驱动/磁盘/工具链/CUDA 工具链(nvcc,Blackwell 需 ≥12.8)/HF 网络连通性 |
+| `01_check_python_env.sh` | Python 环境体检:conda env/python 版本(3.12 首选)/pip/venv/当前环境 nvcc/编译工具 |
 | `10_build_llamacpp.sh` | 克隆并编译 llama.cpp(GGML_CUDA=ON,产出 llama-server/llama-quantize) |
 | `11_download_weights.sh` | 下载 1.0 GGUF(HF,支持镜像)与 Jev 原始权重 |
 | `12_convert_jev_gguf.sh` | Jev HF→GGUF 转换(architectures 改为分类头,按官方文档流程) |
@@ -124,6 +144,8 @@ JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 
 ## 已知边界与排障
 
+- **10 号报 `unsupported GNU version! gcc versions later than ...`**:nvcc 拒绝过新的宿主 g++(如 15.x)。处理:在本环境 `conda install -c conda-forge gxx_linux-64=14`(为 nvcc 提供兼容宿主编译器),或改装 `cuda-toolkit=12.9/13.0`。
+- **20 号启动报 `libcudart.so.12: cannot open shared object file`**:CUDA Toolkit 装在 conda 环境里时,先 `conda activate py312` 再起引擎;或 `export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH`。
 - **400/静默重试类问题**:llama.cpp 路径不涉及 vLLM 的 `--trust-request-mm-kwargs` 与 chat template 参数,GGUF 内嵌模板已关闭 thinking,无需额外设置。
 - **首次解析卡在下载**:版面模型(约几百 MB)来自 Paddle 官方地址,网络受限时手动下载 `PP-DocLayoutV3_infer.tar` 解压后 `export OCR_LAYOUT_MODEL_DIR=/path/to/PP-DocLayoutV3_infer`。
 - **解析挂死先看引擎日志**:`../run/logs/*.log`;再 `curl http://127.0.0.1:18601/health`。
