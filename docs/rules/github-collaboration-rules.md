@@ -2,9 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 版本 | v1.2 |
+| 版本 | v1.3 |
 | 生效日期 | 2026-10-29 |
-| 仓库根目录 | `/home/z/my-project/`(沙箱根目录) |
+| 仓库根目录 | 沙箱根目录,当前为 `/home/z/my-project/`;以 `git rev-parse --show-toplevel` 实测为准(见规则 2) |
+| 远程仓库 | `origin` → github.com/dongf9527/MiniCPM-OCR(分支 `main`) |
 | 默认分支 | `main` |
 | 适用范围 | 本仓库全部代码与文档改动,包括 AI 协作会话产生的所有变更 |
 | 优先级 | 本规则高于会话临时约定;确需豁免时须在会话中明确说明并留档 |
@@ -16,7 +17,7 @@
 | # | 规则 | 核心要求 |
 |---|---|---|
 | 1 | 唯一同步方式 | 所有代码/文档改动通过 git commit + git push 推送到 GitHub,不在对话中凭空产生代码 |
-| 2 | 仓库位置 | 严格使用沙箱中的根目录 `/home/z/my-project/`,不在其他目录创建 .git |
+| 2 | 仓库位置 | 严格使用沙箱根目录作为仓库根目录(当前为 `/home/z/my-project/`,以 `git rev-parse --show-toplevel` 实测为准),不在其他目录创建 .git |
 | 3 | 提交规范 | 小步提交,commit message 使用 conventional commits 风格(如 `feat:`、`fix:`、`docs:`) |
 | 4 | 会话记录 | 分析/评估/测试记录写入 `docs/` 目录,以 Markdown 形式提交推送 |
 | 5 | 禁止 force push | 绝不使用 `git push --force`;同理禁止对已推送 commit 执行 `--amend` 后再推送(等效 force,同样触犯本条);未推送 commit 的 amend 属修正笔误常规手段,不受限 |
@@ -40,7 +41,7 @@
 
 ### 规则 2:仓库位置
 
-严格使用沙箱中的根目录 `/home/z/my-project/`,禁止在任何其他路径执行 `git init`。目录职责如下:
+仓库根目录 = 沙箱根目录。当前沙箱环境中为 `/home/z/my-project/`;**一律以 `git rev-parse --show-toplevel` 的实测结果为准**——若沙箱环境迁移导致挂载路径变化,以实测值为准,并同步更新本文档与 `docs/README.md`。禁止在仓库根目录以外的任何路径执行 `git init`。目录职责如下:
 
 | 路径 | 职责 | 是否入库 |
 |---|---|---|
@@ -132,6 +133,7 @@ rebase 不是默认操作。执行前必须先评估两个替代方案:
 - 2026-10-29 推送前历史重建:仓库最早的本地提交曾在索引中包含 `.env`,为避免敏感内容进入远程历史,在**全部提交均未推送**的状态下重建了干净历史(未推送状态下的合法整理,符合规则 5 与规则 6);
 - 2026-10-29 远程闭环:配置 origin 并完成首次 push(`970c5e3...3260382` 共 5 笔提交),token 仅存于本地 `.git/config`;
 - 2026-10-29 文档目录体系:建立 `docs/rules|evaluation|records` 分类结构,评估报告由 `download/` 迁入 `docs/evaluation/`,协作规则迁入 `docs/rules/`,新增 `docs/README.md` 索引;
+- 2026-10-29 仓库根目录约定升级(v1.3):由硬编码绝对路径改为"沙箱根目录 + `git rev-parse --show-toplevel` 实测优先",适配沙箱环境迁移,并补充远程仓库信息;
 - **待办**:首推使用的 GitHub token 建议吊销重发(曾在会话中明文出现),下次推送前更新 `.git/config` 中的凭证。
 
 ---
@@ -141,6 +143,7 @@ rebase 不是默认操作。执行前必须先评估两个替代方案:
 | 场景 | 命令 |
 |---|---|
 | 会话开工同步 | `git pull --ff-only && git status` |
+| 确认仓库根目录 | `git rev-parse --show-toplevel` |
 | 查看改动 | `git status` / `git diff` / `git diff --staged` |
 | 提交 | `git add <file>` → `git commit -m "docs: ..."` |
 | 推送 | `git push` |
