@@ -24,43 +24,74 @@
 
 共卡且两引擎常驻时按 **12–14 GB** 预算,余量约 2–4 GB;若遇 OOM:先降 `JEV_CTX`(16384→8192),再降 `OCR_CTX`(8192→4096),版面模型保持 CPU。极端情况下两引擎不同时启动,按需起停(`90_stop_all.sh` 后单起其一)。
 
-## 快速开始
+## 0. 系统依赖(一次性,sudo)
 
-前置:Ubuntu 22.04 类系统、NVIDIA 驱动 ≥535、磁盘 ≥15 GB、内存 ≥16 GB。全部命令在 `workspace/deploy-16g/` 下执行。
+前置:Ubuntu 22.04 类系统、磁盘 ≥15 GB、内存 ≥16 GB。
 
 ```bash
-# 0) 体检:GPU/驱动/磁盘/工具链
-bash 00_check_gpu.sh
+# 基础工具链
+sudo apt-get update
+sudo apt-get install -y build-essential cmake git curl python3 python3-venv python3-pip
 
-# 1) 编译 llama.cpp(CUDA)
-bash 10_build_llamacpp.sh
+# NVIDIA 驱动 ≥535(能跑 nvidia-smi 即已就绪;新装后需重启)
+nvidia-smi || { sudo apt-get install -y nvidia-driver-535; echo "== 重启系统后继续 =="; }
 
-# 2) 下载权重:1.0 GGUF(2.3 GB)+ Jev 原始权重(约 4 GB)
-bash 11_download_weights.sh
-
-# 3) Jev 转 GGUF(官方无现成 GGUF,需本机转换,首次约 10–20 分钟)
-bash 12_convert_jev_gguf.sh
-
-# 4) 起 1.0 解析引擎
-bash 20_start_ocr_engine.sh
-
-# 5)(可选)叠加 Jev:转换环境 → 引擎 → 评分服务
-bash 22_setup_jev_render_env.sh     # 装渲染环境(Chromium/Node/字体,较慢)
-bash 21_start_jev_engine.sh
-bash 23_start_jev_service.sh
-
-# 6) SDK 环境(含版面模型依赖,版面默认走 CPU,不占显存)
-bash 30_setup_sdk_env.sh
-
-# 7) 解析(SDK 自动下载 PP-DocLayoutV3 版面模型)
-bash 40_parse.sh /path/to/doc.pdf ./out
-#    带 Jev 质检:JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
-
-# 8) 冒烟测试(健康检查 + 显存占用 + 示例图端到端)
-bash 50_smoke_test.sh
+# CUDA Toolkit ≥12(编译 GGML_CUDA 需要 nvcc;Ubuntu 自带源版本偏旧,走 NVIDIA 官方源)
+nvcc --version || {
+  wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+  sudo dpkg -i cuda-keyring_1.1-1_all.deb && sudo apt-get update
+  sudo apt-get install -y cuda-toolkit-12-6
+  echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
+}
+export PATH=/usr/local/cuda/bin:$PATH   # 当前会话立即生效
 ```
 
-首次解析前建议先跑 `50_smoke_test.sh` 确认引擎可用。
+## 快速开始
+
+两条路线:
+
+- **最小路径(仅 1.0 解析,不部署 Jev)**:`00 → 10 → 11(SKIP_JEV=true) → 20 → 30 → 50`
+- **完整路径(1.0 + Jev 质检)**:在最小路径基础上,`11` 不带 SKIP_JEV,并补 `12 → 22 → 21 → 23`,解析时 `JEV_ENABLED=true`
+
+```bash
+cd <仓库根>/workspace/deploy-16g
+cp env.16g.example.sh env.local.sh   # 可选:改 HF_ENDPOINT 等;不建则用内置 16G 默认值
+
+# 1) 体检
+bash 00_check_gpu.sh                 # 预期:汇总行"未过 0 项"
+
+# 2) 编译 llama.cpp(数分钟;4060Ti/4090 可 LLAMA_CUDA_ARCH=89 加速,5090 为 120)
+LLAMA_CUDA_ARCH=89 bash 10_build_llamacpp.sh   # 预期:产出 build/bin/llama-server
+#    注:ARCH 须在首次配置前指定;已编译过想换架构:rm -rf ../llama.cpp/build 后重跑
+
+# 3) 下载权重(最小路径跳过 Jev,省 4–5 GB)
+SKIP_JEV=true bash 11_download_weights.sh      # 预期:gguf/ 下两个 .gguf 文件
+
+# 4) 起 1.0 引擎
+bash 20_start_ocr_engine.sh          # 预期:"就绪: http://127.0.0.1:18601/health";nvidia-smi 约 4–6 GB
+
+# 5) SDK 环境(版面检测默认 CPU,不占显存)
+bash 30_setup_sdk_env.sh             # 预期:"SDK ok"
+
+# 6) 冒烟测试(内部自动调 40 号脚本跑一张仓库自带示例图)
+bash 50_smoke_test.sh                # 预期:健康检查 ✓ + 显存快照 + 解析产物列表
+
+# 7) 解析自己的文件
+bash 40_parse.sh /path/to/doc.pdf ./out
+```
+
+完整路径补充(在最小路径的步骤 3–4 之间插入):
+
+```bash
+bash 11_download_weights.sh          # 不带 SKIP_JEV,幂等:已下的 1.0 跳过,补下 Jev
+bash 12_convert_jev_gguf.sh          # Jev 转 GGUF(首次约 10–20 分钟)
+bash 22_setup_jev_render_env.sh      # 渲染环境(Chromium/Node/字体,较慢)
+bash 21_start_jev_engine.sh
+bash 23_start_jev_service.sh         # 预期:healthz 返回 "status": "ok"
+JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
+```
+
+停止全部服务:`bash 90_stop_all.sh`。服务类脚本的日志统一在 `../run/logs/`。
 
 ## 配置
 
