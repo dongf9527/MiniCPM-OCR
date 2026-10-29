@@ -20,12 +20,14 @@ ensure_hf_cli() {
 }
 
 hf_download() {
-    # 用法: hf_download <repo> <file|"*"> <dest_dir>
+    # 用法: hf_download <repo> <file|"*"> <dest_dir>;target 为 * 时下载整仓
     local repo="$1" target="$2" dest="$3"
     if command -v hf >/dev/null 2>&1; then
-        hf download "$repo" "$target" --local-dir "$dest"
+        if [ "$target" = "*" ]; then hf download "$repo" --local-dir "$dest"; \
+        else hf download "$repo" "$target" --local-dir "$dest"; fi
     else
-        huggingface-cli download "$repo" "$target" --local-dir "$dest"
+        if [ "$target" = "*" ]; then huggingface-cli download "$repo" --local-dir "$dest"; \
+        else huggingface-cli download "$repo" "$target" --local-dir "$dest"; fi
     fi
 }
 
@@ -39,13 +41,21 @@ else
 fi
 ls -lh "$GGUF_DIR" | sed 's/^/    /'
 
-say "下载 Jev 原始权重(约 4–5 GB)→ $JEV_HF_DIR/$JEV_REPO"
-if [ -f "$JEV_HF_DIR/$JEV_REPO/config.json" ]; then
-    echo "    已存在,跳过"
+if [ "${SKIP_JEV:-false}" = "true" ]; then
+    say "SKIP_JEV=true,跳过 Jev 权重下载(最小路径:仅跑 1.0 解析)"
 else
-    ensure_hf_cli
-    hf_download "$JEV_REPO" "*" "$JEV_HF_DIR/$JEV_REPO"
+    say "下载 Jev 原始权重(约 4–5 GB)→ $JEV_HF_DIR/$JEV_REPO"
+    if [ -f "$JEV_HF_DIR/$JEV_REPO/config.json" ]; then
+        echo "    已存在,跳过"
+    else
+        ensure_hf_cli
+        hf_download "$JEV_REPO" "*" "$JEV_HF_DIR/$JEV_REPO"
+    fi
+    ls "$JEV_HF_DIR/$JEV_REPO" 2>/dev/null | head -20 | sed 's/^/    /' || true
 fi
-ls "$JEV_HF_DIR/$JEV_REPO" | head -20 | sed 's/^/    /'
 
-say "下一步: bash 12_convert_jev_gguf.sh(1.0 侧无需转换,可直接起 20 号脚本)"
+if [ "${SKIP_JEV:-false}" = "true" ]; then
+    say "下一步: bash 20_start_ocr_engine.sh(1.0 GGUF 无需转换)"
+else
+    say "下一步: bash 12_convert_jev_gguf.sh(1.0 侧无需转换,也可直接起 20 号脚本)"
+fi
