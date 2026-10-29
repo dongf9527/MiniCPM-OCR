@@ -14,10 +14,11 @@
 |---|---|---|---|
 | [GitHub 协作规则](./rules/github-collaboration-rules.md) | `rules/` | v1.4 / 2026-10-29 | 7 条协作规则、目录布局约定、仓库现状记录 |
 | [MiniCPM-OCR 深度评估报告](./evaluation/MiniCPM-OCR-深度评估报告.md) | `evaluation/` | v1.1 / 2026-10-29 | 功能特点、OCR 能力、部署要求、二次开发四大方向评估,含双模型对比、竞品横评、商用许可、硬件成本与落地路线图 |
+| [16G 显存跑 OCR 可行性评估](./records/2026-10-29-16G显存跑OCR可行性评估.md) | `records/` | 2026-10-29 | 单卡无并发场景结论:可行,llama.cpp GGUF 路径;含显存预算推算与 OOM 降档顺序;配套 `workspace/deploy-16g/` 脚本包 |
 
 ## 与其他目录的分工
 
 - 仓库根目录即上游 MiniCPM-OCR 源码快照(`sdk/`、`docs/`、`assets/`、`scripts/` 等),只读使用,协作改动不进入上游目录;
-- `workspace/`:协作用脚本与生成物(首次使用时创建,不与上游 `scripts/` 混用);
+- `workspace/`:协作用脚本与生成物,不与上游 `scripts/` 混用;当前内容:`deploy-16g/` 16G 单卡部署脚本包;
 - 沙箱外层目录(`/home/z/my-project/` 下的 `skills/`、`upload/`、`download/`、`.env`)位于仓库之外,不入库;
 - 新增文档时:先按上表选择子目录,再更新本索引,以 `docs:` 提交。
