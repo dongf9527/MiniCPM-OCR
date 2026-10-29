@@ -1,0 +1,8 @@
+# 生成物与大文件不入库(脚本与文档入库)
+llama.cpp/
+gguf/
+jev-hf/
+venv-*/
+run/
+*.log
+__pycache__/
