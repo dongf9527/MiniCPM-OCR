@@ -110,7 +110,7 @@ bash 23_start_jev_service.sh         # 预期:healthz 返回 "status": "ok"
 JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 ```
 
-停止全部服务:`bash 90_stop_all.sh`。服务类脚本的日志统一在 `../run/logs/`。
+停止服务:`bash 90_stop_all.sh`(全停);`bash 90_stop_all.sh jev`(只停 Jev 两服务,保留 1.0 引擎);`bash 90_stop_all.sh ocr`(只停 1.0 引擎)。服务类脚本的日志统一在 `../run/logs/`。
 
 ## 配置
 

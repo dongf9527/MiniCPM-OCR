@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
-# 90 — 按 pidfile 停止本包启动的全部服务
+# 90 — 按 pidfile 停止本包启动的服务
+# 用法: bash 90_stop_all.sh [名称过滤]
+#   不带参数: 停止全部(ocr-engine / jev-engine / jev-service)
+#   bash 90_stop_all.sh jev   只停 Jev 两服务,保留 1.0 引擎
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"
+
+pattern="${1:-}"
+[ -n "$pattern" ] && echo "过滤: 仅停止名称含 '$pattern' 的服务"
 
 stopped=0
 for pf in "$RUN_DIR"/*.pid; do
     [ -f "$pf" ] || continue
     name="$(basename "$pf" .pid)"
+    if [ -n "$pattern" ] && [[ "$name" != *"$pattern"* ]]; then continue; fi
     pid="$(cat "$pf")"
     if kill -0 "$pid" 2>/dev/null; then
         kill "$pid" 2>/dev/null || true
