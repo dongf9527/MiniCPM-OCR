@@ -87,7 +87,7 @@ LLAMA_CUDA_ARCH=120 bash 10_build_llamacpp.sh   # 预期:产出 build/bin/llama-
 SKIP_JEV=true bash 11_download_weights.sh      # 预期:gguf/ 下两个 .gguf 文件
 
 # 4) 起 1.0 引擎
-bash 20_start_ocr_engine.sh          # 预期:"就绪: http://127.0.0.1:18601/health";nvidia-smi 约 4–6 GB
+bash 20_start_ocr_engine.sh          # 预期:"就绪: http://127.0.0.1:18601/health";nvidia-smi 约 4–6 GB(实机 RTX 5080 实测 3.9 GB)
 
 # 5) SDK 环境(版面检测默认 CPU,不占显存)
 bash 30_setup_sdk_env.sh             # 预期:"SDK ok"
