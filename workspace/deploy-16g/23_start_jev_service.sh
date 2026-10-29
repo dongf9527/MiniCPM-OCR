@@ -23,7 +23,10 @@ say "启动 jev-service $JEV_SERVICE_HOST:$JEV_SERVICE_PORT → 引擎 $JEV_ENGI
 # 渲染并发由 RM_RENDER_BROWSERS 控制,无并发需求保持 1
 export RM_RENDER_BROWSERS="${RM_RENDER_BROWSERS:-1}"
 export JEV_BACKEND_CONFIG="$BACKEND_YAML"
-PATH="$VENV/bin:$PATH" nohup bash "$REPO_ROOT/scripts/minicpm-ocr-jev/sdk/start_render_score.sh" \
+# 上游 start_render_score.sh 以 ${HOST:-0.0.0.0} 决定绑定地址;而 conda 编译工具链
+# (gxx/cuda)激活脚本会把 HOST 改写为交叉编译三元组(如 x86_64-conda-linux-gnu),
+# uvicorn 将其解析为非本机 IP 导致 bind 失败。这里显式钉回本服务监听地址。
+PATH="$VENV/bin:$PATH" HOST="$JEV_SERVICE_HOST" nohup bash "$REPO_ROOT/scripts/minicpm-ocr-jev/sdk/start_render_score.sh" \
     "$JEV_SERVICE_PORT" "$JEV_ENGINE_URL" >"$LOG_DIR/jev-service.log" 2>&1 &
 echo $! > "$PIDFILE"
 
