@@ -29,4 +29,4 @@ esac
 
 "$SDK_VENV/bin/python" -c 'import minicpmvocr; print("    SDK ok:", minicpmvocr.__name__)' \
     || die "SDK 导入失败,请检查上方 pip 日志"
-echo "完成。版面模型 PP-DocLayoutV3 将在首次解析时自动下载(约几百 MB)。"
+echo "完成。版面模型 PP-DocLayoutV3 由 40 号首次解析时准备(存于 workspace/models/,约几百 MB)。"

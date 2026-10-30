@@ -26,12 +26,33 @@ curl -sf "http://$OCR_HOST:$OCR_PORT/health" >/dev/null 2>&1 \
 mkdir -p "$OUTPUT"
 OUTPUT="$(cd "$OUTPUT" && pwd)"   # 同上:输出也钉绝对,落点与上方提示一致
 
+# 版面模型:自定义 config 不触发 SDK 自动下载(docs/minicpmvocr_api.md),
+# 缺文件就在本地补齐(官方 Paddle 源,约几百 MB,仅首次)
+LAYOUT_MODEL_DIR="${OCR_LAYOUT_MODEL_DIR:-$WORKSPACE_DIR/models/PP-DocLayoutV3_infer}"
+if [ ! -f "$LAYOUT_MODEL_DIR/inference.pdiparams" ] \
+    && [ "$LAYOUT_MODEL_DIR" != "$WORKSPACE_DIR/models/PP-DocLayoutV3_infer" ]; then
+    warn "OCR_LAYOUT_MODEL_DIR 缺 inference.pdiparams,回退到 $WORKSPACE_DIR/models/PP-DocLayoutV3_infer"
+    LAYOUT_MODEL_DIR="$WORKSPACE_DIR/models/PP-DocLayoutV3_infer"
+fi
+if [ ! -f "$LAYOUT_MODEL_DIR/inference.pdiparams" ]; then
+    MODELS_DIR="$WORKSPACE_DIR/models"
+    TARBALL="$MODELS_DIR/PP-DocLayoutV3_infer.tar"
+    say "准备版面模型 PP-DocLayoutV3 → $LAYOUT_MODEL_DIR(约几百 MB,仅首次)"
+    mkdir -p "$MODELS_DIR"
+    [ -f "$TARBALL" ] || curl -fL --retry 3 -o "$TARBALL" \
+        "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-DocLayoutV3_infer.tar"
+    tar xf "$TARBALL" -C "$MODELS_DIR"
+    [ -f "$LAYOUT_MODEL_DIR/inference.pdiparams" ] \
+        || die "版面模型仍缺 inference.pdiparams — 检查网络,或按 README 手动下载解压后重跑"
+fi
+
 ARGS=(
     --config "$REPO_ROOT/sdk/minicpmvocr/configs/minicpmvocr.yaml"
     --backend llamacpp
     --server-url "http://$OCR_HOST:$OCR_PORT"
     --model "$OCR_MODEL_NAME"
     --set "layout.device=$LAYOUT_DEVICE"
+    --set "layout.model_dir=$LAYOUT_MODEL_DIR"
     --set pipeline.queue_mode=serial
     --set pipeline.max_workers=1
 )
