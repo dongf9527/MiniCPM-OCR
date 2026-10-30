@@ -3,6 +3,7 @@
 # 用法:
 #   bash 40_parse.sh <输入 pdf/图片> [输出目录]
 #   JEV_ENABLED=true bash 40_parse.sh <输入> [输出目录]   # 启用 Jev 质检
+# 产出:<输出目录>/<输入主名>.md;SDK 中间产物在 workspace/runs/minicpmvocr_<时间戳>/
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"
 
 INPUT="${1:?用法: bash 40_parse.sh <输入 pdf/图片> [输出目录]}"
@@ -25,6 +26,12 @@ curl -sf "http://$OCR_HOST:$OCR_PORT/health" >/dev/null 2>&1 \
 
 mkdir -p "$OUTPUT"
 OUTPUT="$(cd "$OUTPUT" && pwd)"   # 同上:输出也钉绝对,落点与上方提示一致
+
+# CLI parse 语义:--output 是目标 Markdown 文件路径(非目录,直接 write_text);
+# 脚本参数保持"输出目录",内部翻译为 <目录>/<输入主名>.md
+MD_STEM="$(basename "$INPUT")"
+MD_STEM="${MD_STEM%.*}"
+OUTPUT_MD="$OUTPUT/$MD_STEM.md"
 
 # 版面模型:自定义 config 不触发 SDK 自动下载(docs/minicpmvocr_api.md),
 # 缺文件就在本地补齐(官方 Paddle 源,约几百 MB,仅首次)
@@ -53,6 +60,7 @@ ARGS=(
     --model "$OCR_MODEL_NAME"
     --set "layout.device=$LAYOUT_DEVICE"
     --set "layout.model_dir=$LAYOUT_MODEL_DIR"
+    --set "run.run_root=$WORKSPACE_DIR/runs"
     --set pipeline.queue_mode=serial
     --set pipeline.max_workers=1
 )
@@ -65,11 +73,12 @@ if [ "${JEV_ENABLED:-false}" = "true" ]; then
         --set tts.enabled=true
         --set "tts.rm_url=http://127.0.0.1:$JEV_SERVICE_PORT"
         --set tts.rm_input_form=ternary
+        --set tts.sampling.seed=42
     )
     echo "Jev 质检已启用(rm_url=http://127.0.0.1:$JEV_SERVICE_PORT,ternary)"
 fi
 
-say "解析 $INPUT → $OUTPUT"
+say "解析 $INPUT → $OUTPUT_MD"
 cd "$REPO_ROOT"
 export PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True
-exec "$SDK_VENV/bin/minicpmvocr" parse "${ARGS[@]}" --input "$INPUT" --output "$OUTPUT"
+exec "$SDK_VENV/bin/minicpmvocr" parse "${ARGS[@]}" --input "$INPUT" --output "$OUTPUT_MD"
