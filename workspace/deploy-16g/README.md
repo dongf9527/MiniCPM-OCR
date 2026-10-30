@@ -120,7 +120,7 @@ JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 |---|---|---|
 | `OCR_CTX` | 8192 | 1.0 引擎上下文;显存富余可升 16384 |
 | `JEV_CTX` | 16384 | Jev 引擎上下文;官方示例 32768,共卡 16G 建议降档 |
-| `LAYOUT_DEVICE` | cpu | 版面检测设备;`cuda:0` 需 30 号脚本以 GPU 模式装 paddle |
+| `LAYOUT_DEVICE` | cpu | 版面检测设备;`cuda:0` 需重跑 `LAYOUT_DEVICE=cuda:0 bash 30_setup_sdk_env.sh` 以 GPU 模式装 paddle(脚本自动卸 CPU 版防共存) |
 | `JEV_ENABLED` | false | `40_parse.sh` 是否启用 Jev 评分门控 |
 | `JEV_FORCE_SCORE` | false | 单候选也强制送 Jev RM 评分(验证链路/采集 RM 耗时) |
 | `HF_ENDPOINT` | 官方源 | 下载慢可设 `https://hf-mirror.com` |
@@ -148,6 +148,7 @@ JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 
 - **10 号报 `unsupported GNU version! gcc versions later than ...`**:nvcc 拒绝过新的宿主 g++(如 15.x)。处理:在本环境 `conda install -c conda-forge gxx_linux-64=14`(为 nvcc 提供兼容宿主编译器),或改装 `cuda-toolkit=12.9/13.0`。
 - **20 号启动报 `libcudart.so.12: cannot open shared object file`**:CUDA Toolkit 装在 conda 环境里时,先 `conda activate py312` 再起引擎;或 `export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH`。
+- **paddle GPU 版(RTX 50 系)**:GPU 版为 `paddlepaddle-gpu==3.3.0` @ cu129 官方源,wheel 自带 CUDA 12.9 运行时(驱动 ≥575,无需本机 toolkit);装完验证 `workspace/venv-sdk/bin/python -c "import paddle; paddle.utils.run_check()"`。若报算力/架构不支持,改 cu130 源(`-i https://www.paddlepaddle.org.cn/packages/stable/cu130/`)。CPU/GPU 版不可共存(同占 site-packages/paddle),30 号已自动互卸;GPU 版跑 CPU 推理也没问题,切回 `LAYOUT_DEVICE=cpu` 无需重装。
 - **400/静默重试类问题**:llama.cpp 路径不涉及 vLLM 的 `--trust-request-mm-kwargs` 与 chat template 参数,GGUF 内嵌模板已关闭 thinking,无需额外设置。
 - **首次解析卡在下载**:版面模型(约几百 MB)来自 Paddle 官方地址,网络受限时手动下载 `PP-DocLayoutV3_infer.tar` 解压后 `export OCR_LAYOUT_MODEL_DIR=/path/to/PP-DocLayoutV3_infer`。
 - **PDF 解析长时间无输出属正常**:CLI 先整本栅格化(无进度输出,大文件静默 1–3 分钟),且 CLI oneshot 默认禁用逐页进度日志(`progress_log_every=10**9`,即便传 `--config` 也生效)。40 号已显式恢复进度(每 5 页一条 `[infer] progress N/M`)并在启动时按页数打印 ETA;新版 pymupdf 的 `fitz` 兼容垫片 FutureWarning(每个渲染进程一条)已按消息前缀静音,无功能影响。

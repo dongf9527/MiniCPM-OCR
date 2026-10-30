@@ -17,12 +17,19 @@ say "安装 minicpm-ocr[all]==1.0.2"
 
 case "${LAYOUT_DEVICE:-cpu}" in
     cuda*)
-        say "安装 GPU 版 paddlepaddle(版面检测走 $LAYOUT_DEVICE)"
+        say "安装 GPU 版 paddlepaddle(版面检测走 $LAYOUT_DEVICE;wheel 自带 CUDA 12.9 运行时,无需本机 toolkit)"
+        # CPU/GPU 版同占 site-packages/paddle,不可共存——先卸掉另一个再装
+        "$SDK_VENV/bin/pip" uninstall -y paddlepaddle >/dev/null 2>&1 || true
         "$SDK_VENV/bin/pip" install "paddlepaddle-gpu==3.3.0" \
             -i https://www.paddlepaddle.org.cn/packages/stable/cu129/
+        "$SDK_VENV/bin/python" -c 'import paddle
+assert paddle.device.is_compiled_with_cuda(), "装上的 paddle 不含 CUDA 编译 — 检查是否命中了 CPU 版索引"
+print("    paddle-gpu ok:", paddle.__version__)' \
+            || die "paddlepaddle-gpu 安装异常 — 查看上方 pip 日志"
         ;;
     *)
         say "安装 CPU 版 paddlepaddle(版面检测走 CPU,不占显存)"
+        "$SDK_VENV/bin/pip" uninstall -y paddlepaddle-gpu >/dev/null 2>&1 || true
         "$SDK_VENV/bin/pip" install "paddlepaddle==3.2.1"
         ;;
 esac
