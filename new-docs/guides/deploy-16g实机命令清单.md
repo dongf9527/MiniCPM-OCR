@@ -102,6 +102,7 @@ nvidia-smi                                # 显存与温度
 ```
 
 - **首次解析卡在下载**:版面模型(PP-DocLayoutV3,125.8 MB)由 40 号首次解析时自动下载(官方 BOS 源,tar 缓存复用);网络受限时手动下载 `PP-DocLayoutV3_infer.tar` 解压后 `export OCR_LAYOUT_MODEL_DIR=/path/to/PP-DocLayoutV3_infer`。
+- **PDF 解析长时间无输出属正常**:栅格化阶段静默 1–3 分钟;40 号已恢复逐页进度(每 5 页一条 `[infer] progress`)并按页数前置 ETA,`fitz` FutureWarning 已按消息前缀静音。
 - **10 号报 `unsupported GNU version`**:nvcc 拒绝过新的宿主 g++,`conda install -c conda-forge gxx_linux-64=14` 或改装 `cuda-toolkit=12.9/13.0`。
 - **20 号报 `libcudart.so.12`**:先 `conda activate py312` 再起引擎,或 `export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH`。
 - **DSpark 无效是正常的**:llama.cpp 路径不支持投机解码,50 号不做该检查。

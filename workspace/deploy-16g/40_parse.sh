@@ -28,6 +28,23 @@ curl -sf "http://$OCR_HOST:$OCR_PORT/health" >/dev/null 2>&1 \
 mkdir -p "$OUTPUT"
 OUTPUT="$(cd "$OUTPUT" && pwd)"   # 同上:输出也钉绝对,落点与上方提示一致
 
+# PDF 输入:预读页数给出耗时预期(CLI 的 PDF 栅格化与推理阶段都可能长时间静默,
+# 不给 ETA 会被误判为卡死——2026-10-30 实机 djfyj.pdf 反馈的教训)
+PDF_PAGES=""
+if [ "${INPUT##*.}" = "pdf" ] || [ "${INPUT##*.}" = "PDF" ]; then
+    PDF_PAGES="$($SDK_VENV/bin/python -c 'import sys; import fitz; print(fitz.open(sys.argv[1]).page_count)' "$INPUT" 2>/dev/null || true)"
+    if [ -n "$PDF_PAGES" ] && [ "$PDF_PAGES" -gt 0 ] 2>/dev/null; then
+        PER_PAGE_SEC="3.8"   # 版面 CPU 2.5 + 引擎 1.3(实测 2026-10-30)
+        ETA_NOTE="版面 CPU + 引擎,未含栅格化"
+        if [ "${JEV_ENABLED:-false}" = "true" ]; then
+            PER_PAGE_SEC="7.1"   # + Jev 强制评分 3.3s/页
+            ETA_NOTE="版面 CPU + 引擎 + Jev,未含栅格化"
+        fi
+        ETA_MIN="$(awk -v n="$PDF_PAGES" -v s="$PER_PAGE_SEC" 'BEGIN{printf "%d", (n*s+59)/60}')"
+        say "PDF 共 $PDF_PAGES 页,预计约 ${ETA_MIN} 分钟($ETA_NOTE)"
+    fi
+fi
+
 # CLI parse 语义:--output 是目标 Markdown 文件路径(非目录,直接 write_text);
 # 脚本参数保持"输出目录",内部翻译为 <目录>/<输入主名>.md
 MD_STEM="$(basename "$INPUT")"
@@ -64,6 +81,9 @@ ARGS=(
     --set "run.run_root=$WORKSPACE_DIR/runs"
     --set pipeline.queue_mode=serial
     --set pipeline.max_workers=1
+    # CLI oneshot 默认把 progress_log_every 设为 10**9(cli.py _build_parse_overrides),
+    # 即便传 --config 也压掉 yaml 的 20 → 推理全程无进度。显式恢复,每 5 页打一条:
+    --set logging.progress_log_every=5
 )
 
 if [ "${JEV_ENABLED:-false}" = "true" ]; then
@@ -86,6 +106,24 @@ if [ "${JEV_ENABLED:-false}" = "true" ]; then
 fi
 
 say "解析 $INPUT → $OUTPUT_MD"
+if [ -n "$PDF_PAGES" ]; then
+    echo "提示:PDF 栅格化阶段(整本渲染)无进度输出,大文件静默 1–3 分钟属正常;推理阶段每 5 页打一条 [infer] progress"
+fi
 cd "$REPO_ROOT"
 export PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True
-exec "$SDK_VENV/bin/minicpmvocr" parse "${ARGS[@]}" --input "$INPUT" --output "$OUTPUT_MD"
+# 静音 fitz 兼容垫片的 FutureWarning(新版 pymupdf 自带 shim,每个 spawn 渲染进程各打一条,
+# 无功能影响;按消息前缀精确忽略,不掩盖其他 FutureWarning;子进程继承本变量)
+PYWARN='ignore:The `fitz` API is deprecated'
+export PYTHONWARNINGS="${PYTHONWARNINGS:+$PYTHONWARNINGS,}$PYWARN"
+export PYTHONUNBUFFERED=1   # 进度行实时刷出,避免管道/重定向下攒缓冲
+
+set +e
+"$SDK_VENV/bin/minicpmvocr" parse "${ARGS[@]}" --input "$INPUT" --output "$OUTPUT_MD"
+rc=$?
+set -e
+if [ "$rc" -ne 0 ]; then
+    die "解析失败(rc=$rc) — 排查:tail -n 50 $LOG_DIR/*.log;最近中间产物:ls -td $WORKSPACE_DIR/runs/*/ | head -3"
+fi
+if [ -f "$OUTPUT_MD" ]; then
+    say "完成: $OUTPUT_MD($(wc -c < "$OUTPUT_MD") 字节)"
+fi

@@ -150,6 +150,7 @@ JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 - **20 号启动报 `libcudart.so.12: cannot open shared object file`**:CUDA Toolkit 装在 conda 环境里时,先 `conda activate py312` 再起引擎;或 `export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH`。
 - **400/静默重试类问题**:llama.cpp 路径不涉及 vLLM 的 `--trust-request-mm-kwargs` 与 chat template 参数,GGUF 内嵌模板已关闭 thinking,无需额外设置。
 - **首次解析卡在下载**:版面模型(约几百 MB)来自 Paddle 官方地址,网络受限时手动下载 `PP-DocLayoutV3_infer.tar` 解压后 `export OCR_LAYOUT_MODEL_DIR=/path/to/PP-DocLayoutV3_infer`。
+- **PDF 解析长时间无输出属正常**:CLI 先整本栅格化(无进度输出,大文件静默 1–3 分钟),且 CLI oneshot 默认禁用逐页进度日志(`progress_log_every=10**9`,即便传 `--config` 也生效)。40 号已显式恢复进度(每 5 页一条 `[infer] progress N/M`)并在启动时按页数打印 ETA;新版 pymupdf 的 `fitz` 兼容垫片 FutureWarning(每个渲染进程一条)已按消息前缀静音,无功能影响。
 - **JSON 摘要里 `tts.rm_used: 0`(Jev 服务空转)属预期**:llamacpp 后端不支持多候选(`n` 参数被方言层丢弃,上游 `build_llamacpp_payload` 无此键),且干净文本采样结果常与 greedy 一致,去重后单候选不送评。要真跑评分链路/采集 RM 耗时,加 `JEV_FORCE_SCORE=true`;要多候选择优需换 vLLM 后端(上游 `build_vllm_payload` 支持 `n`)。
 - **解析挂死先看引擎日志**:`../run/logs/*.log`;再 `curl http://127.0.0.1:18601/health`。
 - **DSpark 无效是正常的**:llama.cpp 路径不支持投机解码,`50_smoke_test.sh` 不做该检查。
