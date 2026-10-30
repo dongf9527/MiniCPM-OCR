@@ -42,6 +42,9 @@ if [ "${INPUT##*.}" = "pdf" ] || [ "${INPUT##*.}" = "PDF" ]; then
         fi
         ETA_MIN="$(awk -v n="$PDF_PAGES" -v s="$PER_PAGE_SEC" 'BEGIN{printf "%d", (n*s+59)/60}')"
         say "PDF 共 $PDF_PAGES 页,预计约 ${ETA_MIN} 分钟($ETA_NOTE)"
+        # 口径:3.8s/页 来自稀疏页实测(block.png,2 块/页);块密集页可达 2–3 倍
+        # (2026-10-30 djfyj.pdf:22.8 块/页 → 7.2s/页),栅格化前无法预知块数,故仅提示
+        echo "口径:按稀疏页(≤6 块/页)估算;版面密集页(古籍/表格,20+ 块/页)实际可达 2–3 倍"
     fi
 fi
 
