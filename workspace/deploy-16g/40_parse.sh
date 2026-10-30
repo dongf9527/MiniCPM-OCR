@@ -8,6 +8,8 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"
 INPUT="${1:?用法: bash 40_parse.sh <输入 pdf/图片> [输出目录]}"
 OUTPUT="${2:-$PWD/ocr-out}"
 [ -e "$INPUT" ] || die "输入不存在: $INPUT"
+# CLI 在 cd "$REPO_ROOT" 后执行——相对输入会按仓库根重新解析而失配,先钉成绝对路径
+INPUT="$(cd "$(dirname "$INPUT")" && pwd)/$(basename "$INPUT")"
 
 SDK_VENV="${SDK_VENV:-$WORKSPACE_DIR/venv-sdk}"
 [ -x "$SDK_VENV/bin/minicpmvocr" ] || "$SDK_VENV/bin/python" -c 'import minicpmvocr' 2>/dev/null \
@@ -22,6 +24,7 @@ curl -sf "http://$OCR_HOST:$OCR_PORT/health" >/dev/null 2>&1 \
     || die "1.0 引擎未就绪(http://$OCR_HOST:$OCR_PORT)— 先执行 bash 20_start_ocr_engine.sh"
 
 mkdir -p "$OUTPUT"
+OUTPUT="$(cd "$OUTPUT" && pwd)"   # 同上:输出也钉绝对,落点与上方提示一致
 
 ARGS=(
     --config "$REPO_ROOT/sdk/minicpmvocr/configs/minicpmvocr.yaml"
