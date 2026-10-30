@@ -122,6 +122,7 @@ JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 | `JEV_CTX` | 16384 | Jev 引擎上下文;官方示例 32768,共卡 16G 建议降档 |
 | `LAYOUT_DEVICE` | cpu | 版面检测设备;`cuda:0` 需 30 号脚本以 GPU 模式装 paddle |
 | `JEV_ENABLED` | false | `40_parse.sh` 是否启用 Jev 评分门控 |
+| `JEV_FORCE_SCORE` | false | 单候选也强制送 Jev RM 评分(验证链路/采集 RM 耗时) |
 | `HF_ENDPOINT` | 官方源 | 下载慢可设 `https://hf-mirror.com` |
 
 ## 脚本清单
@@ -148,6 +149,7 @@ JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 - **20 号启动报 `libcudart.so.12: cannot open shared object file`**:CUDA Toolkit 装在 conda 环境里时,先 `conda activate py312` 再起引擎;或 `export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH`。
 - **400/静默重试类问题**:llama.cpp 路径不涉及 vLLM 的 `--trust-request-mm-kwargs` 与 chat template 参数,GGUF 内嵌模板已关闭 thinking,无需额外设置。
 - **首次解析卡在下载**:版面模型(约几百 MB)来自 Paddle 官方地址,网络受限时手动下载 `PP-DocLayoutV3_infer.tar` 解压后 `export OCR_LAYOUT_MODEL_DIR=/path/to/PP-DocLayoutV3_infer`。
+- **JSON 摘要里 `tts.rm_used: 0`(Jev 服务空转)属预期**:llamacpp 后端不支持多候选(`n` 参数被方言层丢弃,上游 `build_llamacpp_payload` 无此键),且干净文本采样结果常与 greedy 一致,去重后单候选不送评。要真跑评分链路/采集 RM 耗时,加 `JEV_FORCE_SCORE=true`;要多候选择优需换 vLLM 后端(上游 `build_vllm_payload` 支持 `n`)。
 - **解析挂死先看引擎日志**:`../run/logs/*.log`;再 `curl http://127.0.0.1:18601/health`。
 - **DSpark 无效是正常的**:llama.cpp 路径不支持投机解码,`50_smoke_test.sh` 不做该检查。
 - 上游脚本(`sdk/scripts/`、`scripts/minicpm-ocr-jev/`)与本包并存:本包不修改上游文件,`22/23` 号脚本直接调用上游入口(只读使用,符合协作规则)。

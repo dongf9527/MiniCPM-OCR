@@ -3,6 +3,7 @@
 # 用法:
 #   bash 40_parse.sh <输入 pdf/图片> [输出目录]
 #   JEV_ENABLED=true bash 40_parse.sh <输入> [输出目录]   # 启用 Jev 质检
+#   JEV_FORCE_SCORE=true:单候选也强制送 Jev RM 评分(验证链路/采集 RM 耗时)
 # 产出:<输出目录>/<输入主名>.md;SDK 中间产物在 workspace/runs/minicpmvocr_<时间戳>/
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"
 
@@ -75,6 +76,12 @@ if [ "${JEV_ENABLED:-false}" = "true" ]; then
         --set tts.rm_input_form=ternary
         --set tts.sampling.seed=42
     )
+    # llamacpp 方言丢弃 n 参数,采样候选常与 greedy 一致,去重后单候选会跳过 RM;
+    # JEV_FORCE_SCORE=true 强制送评,用于验证 Jev 链路与采集 RM 耗时
+    if [ "${JEV_FORCE_SCORE:-false}" = "true" ]; then
+        ARGS+=(--set tts.force_score=true)
+        echo "Jev 强制评分已启用(单候选也送 RM)"
+    fi
     echo "Jev 质检已启用(rm_url=http://127.0.0.1:$JEV_SERVICE_PORT,ternary)"
 fi
 
