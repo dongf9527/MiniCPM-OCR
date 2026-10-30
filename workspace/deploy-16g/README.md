@@ -140,6 +140,7 @@ JEV_ENABLED=true bash 40_parse.sh /path/to/doc.pdf ./out
 | `23_start_jev_service.sh` | 起 Jev 内置渲染器评分服务(/v1/rm/score*) |
 | `30_setup_sdk_env.sh` | 建 SDK venv:minicpm-ocr[all]==1.0.2 + paddle(CPU/GPU 二选一) |
 | `40_parse.sh` | 一键解析 PDF/图片 → Markdown(串行模式,可带 Jev) |
+| `41_jev_threshold_report.py` | Jev 阈值校准报告:标注样本阈值扫描,输出免检率-准确率曲线与建议阈值(用法见《Jev阈值业务校准指南》) |
 | `50_smoke_test.sh` | 健康检查 + 显存快照 + 示例图端到端 |
 | `90_stop_all.sh` | 按 pid 停止本包启动的全部服务 |
 
